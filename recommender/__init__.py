@@ -1,2 +1,0 @@
-from recommender.recommender import Recommender
-from recommender.non_personalized import GlobalAverageRecommender

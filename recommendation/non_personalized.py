@@ -1,10 +1,10 @@
-from recommender.recommender import Recommender
+from recommendation.filler import Filler
 
 import pandas as pd
 import numpy as np
 
 
-class GlobalAverageRecommender(Recommender):
+class GlobalAverageFiller(Filler):
     def __init__(self) -> None:
         self.means = None
 
@@ -12,8 +12,8 @@ class GlobalAverageRecommender(Recommender):
         # not considering mean values in the mean
         self.means = np.nanmean(data.values, axis=0)
 
-    def predict(self, row: pd.Series) -> pd.Series:
-        assert self.means is not None, "Assuming trained recommender"
+    def fill(self, row: pd.Series) -> pd.Series:
+        assert self.means is not None, "Assuming trained filler"
 
         row_c = row.copy()
         # input the mean on all empty positions

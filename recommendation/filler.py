@@ -2,7 +2,8 @@ from abc import ABC, abstractmethod
 
 import pandas as pd
 
-class Recommender(ABC):
+
+class Filler(ABC):
 
     @abstractmethod
     def fit(self, data: pd.DataFrame) -> None:
@@ -15,9 +16,9 @@ class Recommender(ABC):
         ...
 
     @abstractmethod
-    def predict(self, row: pd.Series) -> pd.Series:
+    def fill(self, row: pd.Series) -> pd.Series:
         """
-        A method to predict missing ratings in given <row> of rating matrix.
+        A method to predict (fill) missing ratings in given <row> of rating matrix.
 
         (Assuming the same order of jokes as given to <fit>.)
 
