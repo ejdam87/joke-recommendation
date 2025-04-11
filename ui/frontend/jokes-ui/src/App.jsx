@@ -3,28 +3,30 @@ import Button from 'react-bootstrap/Button';
 
 
 function App() {
-    const [data, set_data] = useState("");
+    const [jokes, set_jokes] = useState({});
 
-    const send_request = async () => {
-        const response = await fetch("http://127.0.0.1:5000/example");
+    const get_jokes = async () => {
+        const response = await fetch("http://127.0.0.1:5000/get_jokes");
         if (!response.ok) {
             return null;
         }
 
         const data = await response.json();
-        set_data(data["data"]);
+        set_jokes(data["data"]);
     }
 
     return (
         <>
             <Button
                 variant="primary"
-                onClick={send_request}
+                onClick={get_jokes}
             >
                 Send request!
             </Button>
 
-            <div>Data from the server: {data}</div>
+            {Object.entries(jokes).map(([key, value]) => (
+                <div> {key} - {value} </div>
+            ))}
         </>
     )
 }

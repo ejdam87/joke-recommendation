@@ -1,0 +1,1 @@
+JOKE_CONTENT = "data/jester_items.csv"
