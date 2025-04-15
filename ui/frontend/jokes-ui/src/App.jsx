@@ -73,7 +73,7 @@ function App() {
 
     return (
         <Router>
-            <Navbar sticky="top">
+            <Navbar>
                 <Container>
                     <Nav>
                         <Nav.Link as={Link} to="/"> Department of Fun </Nav.Link>
