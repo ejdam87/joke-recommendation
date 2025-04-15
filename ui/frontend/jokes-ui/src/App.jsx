@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Form, Button } from "react-bootstrap";
+import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import { Navbar, Nav, Container } from "react-bootstrap";
 
-import Joke from "./Joke.jsx";
+import JokeShow from './JokeShow';
+import Profile from './Profile';
 
 function App() {
     const [visible_jokes, set_visible_jokes] = useState({});
@@ -40,29 +42,54 @@ function App() {
     }
 
     const handle_profile_change = (event) => {
-        const new_profile = event.target.files[0];
-        console.log(new_profile);
+        const file = event.target.files[0];
+
+        const reader = new FileReader();
+        reader.onload = (inner_event) => {
+            try
+            {
+                const parsed = JSON.parse(inner_event.target.result);
+                set_profile(parsed);
+            }
+            catch (err)
+            {
+                console.error('JSON parse error:', err);
+            }
+        };
+    
+        reader.readAsText(file);
     };
 
     useEffect(()=> {get_jokes();}, []);
+    useEffect(()=> {get_recommendation();}, [jokes]);
+    useEffect(()=> {get_recommendation();}, [profile]);
 
     return (
-        <>
-            <Button
-                variant="primary"
-                onClick={get_recommendation}
-            >
-                Send request!
-            </Button>
-            <Form.Group controlId="formFile" className="mb-3">
-                <Form.Label>Choose a text file</Form.Label>
-                <Form.Control type="file" accept=".txt" onChange={handle_profile_change} />
-            </Form.Group>
-
-            {Object.entries(visible_jokes).map(([key, value]) => (
-                <Joke id={key} text={value} />
-            ))}
-        </>
+        <Router>
+            <Navbar sticky="top">
+                <Container>
+                    <Nav>
+                        <Nav.Link as={Link} to="/"> Department of Fun </Nav.Link>
+                    </Nav>
+                    <Nav>
+                        <Nav.Link as={Link} to="/profile"> Profile </Nav.Link>
+                    </Nav>
+                </Container>
+            </Navbar>
+            <Routes>
+                <Route path="/" element={
+                    <JokeShow
+                        visible_jokes={visible_jokes}
+                    />
+                    } />
+                <Route path="/profile" element={
+                    <Profile
+                        profile={profile}
+                        handle_profile_change={handle_profile_change}
+                    />
+                    } />
+            </Routes>
+    </Router>
     )
 }
 
