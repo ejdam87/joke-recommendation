@@ -11,7 +11,11 @@ function JokeShow(props) {
         <Container>
             <Row>
                 <Col xs={12} sm={12} md={8} lg={8}>
-                    <MainJoke main_joke={main_joke}/>
+                    <MainJoke
+                        main_joke={main_joke}
+                        profile={props.profile}
+                        set_profile={props.set_profile}
+                    />
                 </Col>
                 <Col xs={12} sm={12} md={4} lg={4}>
                     <SideJokes side_jokes={side_jokes} />

@@ -48,7 +48,7 @@ function App() {
         set_loading(false);
     }
 
-    const handle_profile_change = (event) => {
+    const handle_profile_upload = (event) => {
         const file = event.target.files[0];
 
         const reader = new FileReader();
@@ -95,12 +95,14 @@ function App() {
                     :
                     <JokeShow
                         visible_jokes={visible_jokes}
+                        profile={profile}
+                        set_profile={set_profile}
                     />
                     } />
                 <Route path="/profile" element={
                     <Profile
                         profile={profile}
-                        handle_profile_change={handle_profile_change}
+                        handle_profile_upload={handle_profile_upload}
                     />
                     } />
             </Routes>

@@ -28,12 +28,16 @@ function Profile(props) {
                     <Row>
                         <Col xs={12} sm={12} md={{ span: 3, offset: 2 }} lg={{ span: 3, offset: 2 }} className="d-flex flex-column align-items-center mb-5">
                             <Form.Group controlId="formFile" className="mb-3">
-                                <Form.Label>Upload your profile</Form.Label>
-                                <Form.Control type="file" accept=".json" onChange={props.handle_profile_change} />
+                                <Form.Label>Upload a new profile</Form.Label>
+                                <Form.Control
+                                    type="file"
+                                    accept=".json"
+                                    onChange={props.handle_profile_upload}
+                                />
                             </Form.Group>
 
                             <Button onClick={download_profile} >
-                                Download your profile
+                                Download your current profile
                             </Button>
                         </Col>
                         <Col xs={12} sm={12} md={{ span: 3, offset: 2 }} lg={{ span: 3, offset: 2 }} className="d-flex flex-column align-items-center">

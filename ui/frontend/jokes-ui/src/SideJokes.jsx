@@ -1,9 +1,8 @@
 import { Card } from "react-bootstrap";
 
 function SideJokes(props) {
-    console.log(props.side_jokes);
     return (
-        <Card border="0" className="mt-2">
+        <Card border="0" className="mt-2 d-flex flex-column align-items-center">
             <Card.Header>
                 <Card.Title>Similar jokes you might like</Card.Title>
             </Card.Header>
