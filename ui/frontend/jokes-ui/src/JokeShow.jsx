@@ -13,6 +13,7 @@ function JokeShow(props) {
                 <Col xs={12} sm={12} md={8} lg={8}>
                     <MainJoke
                         main_joke={main_joke}
+                        uid={props.uid}
                         profile={props.profile}
                         set_profile={props.set_profile}
                     />

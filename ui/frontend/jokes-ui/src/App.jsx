@@ -9,6 +9,7 @@ function App() {
     const [visible_jokes, set_visible_jokes] = useState([]); // list to preserve order
     const [jokes, set_jokes] = useState({}); // object since we do not care about the order
     const [profile, set_profile] = useState({});
+    const [uid, set_uid] = useState(-1);
     const [loading, set_loading] = useState(true);
 
     const get_jokes = async () => {
@@ -31,7 +32,7 @@ function App() {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({"profile": profile})
+            body: JSON.stringify({"uid": uid})
         })
         if (!response.ok) {
             set_loading(false);
@@ -40,32 +41,13 @@ function App() {
 
         const data = await response.json();
         let to_show = [];
-        for (let id of data["data"])
+        for (let id of data["recommendation"])
         {
             to_show.push( [id, jokes[id]] );
         }
         set_visible_jokes(to_show);
         set_loading(false);
     }
-
-    const handle_profile_upload = (event) => {
-        const file = event.target.files[0];
-
-        const reader = new FileReader();
-        reader.onload = (inner_event) => {
-            try
-            {
-                const parsed = JSON.parse(inner_event.target.result);
-                set_profile(parsed);
-            }
-            catch (err)
-            {
-                console.error('JSON parse error:', err);
-            }
-        };
-    
-        reader.readAsText(file);
-    };
 
     useEffect(()=> {get_jokes();}, []);
     useEffect(()=> {get_recommendation();}, [jokes]);
@@ -95,6 +77,7 @@ function App() {
                     :
                     <JokeShow
                         visible_jokes={visible_jokes}
+                        uid={uid}
                         profile={profile}
                         set_profile={set_profile}
                     />
@@ -102,7 +85,9 @@ function App() {
                 <Route path="/profile" element={
                     <Profile
                         profile={profile}
-                        handle_profile_upload={handle_profile_upload}
+                        uid={uid}
+                        set_uid={set_uid}
+                        set_profile={set_profile}
                     />
                     } />
             </Routes>

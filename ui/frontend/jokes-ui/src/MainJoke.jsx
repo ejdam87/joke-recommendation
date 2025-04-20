@@ -4,9 +4,19 @@ import { Container, Button, Card, Form } from "react-bootstrap";
 function MainJoke(props) {
     const [rating, set_rating] = useState(0);
 
-    const handle_rating_submit = () => {
-        props.profile[ props.main_joke[0] ] = Number(rating);
-        props.set_profile(props.profile);
+    const handle_rating_submit = async () => {
+        const n_rating = Number(rating)
+        const jid = props.main_joke[0];
+
+        const response = await fetch("http://127.0.0.1:5000/submit_rating", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({"uid": props.uid, "jid": jid, "rating": n_rating})
+        })
+
+        props.set_profile({...props.profile, jid: n_rating});
     }
 
     const joke_text = props.main_joke ? props.main_joke[1] : "";
