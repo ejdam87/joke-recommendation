@@ -8,14 +8,13 @@ class SVDRecommender:
         self.V = np.loadtxt(v_path, delimiter=',')
         self.U = np.loadtxt(u_path, delimiter=',')
 
-        ratings_df = pd.read_csv(ratings_path)
-        self.R = ratings_df.to_numpy()
+        self.R = np.loadtxt(ratings_path, delimiter=',')
 
         self.ratings_since_training = {}
         self.retraining_patience = retraining_patience
 
-        jokes = pd.read_csv("data/jester_items.csv")
-        self.jokes = jokes[~jokes["jokeId"].isin([1,2,3,4,6,9,10,11,12,14])].reset_index(drop=True)
+        # jokes = pd.read_csv("data/jester_items.csv")
+        # self.jokes = jokes[~jokes["jokeId"].isin([1,2,3,4,6,9,10,11,12,14])].reset_index(drop=True)
     
     def seen_jokes(self, user_id):
         seen = np.where(~np.isnan(self.R[user_id]))[0]
@@ -26,8 +25,8 @@ class SVDRecommender:
         seen = self.seen_jokes(user_id)
         jokes_filtered = jokes_sorted[~np.isin(jokes_sorted, seen)][:k]
 
-        for idx in jokes_filtered:
-            print(f"Joke {idx} - score {np.nanmean(self.R[:,idx])}: {self.jokes.iloc[idx]['jokeText']}")
+        # for idx in jokes_filtered:
+            # print(f"Joke {idx} - score {np.nanmean(self.R[:,idx])}: {self.jokes.iloc[idx]['jokeText']}")
         
         return jokes_filtered
 
@@ -41,8 +40,8 @@ class SVDRecommender:
         preds = np.dot(self.V, self.U[user_id]).argsort()[::-1]
         top_k_filtered = preds[~np.isin(preds, seen)][:k]
 
-        for idx in top_k_filtered:
-            print(self.jokes.iloc[idx]["jokeText"])
+        # for idx in top_k_filtered:
+            # print(self.jokes.iloc[idx]["jokeText"])
 
         return top_k_filtered
 
@@ -61,8 +60,8 @@ class SVDRecommender:
         similarities_indices = summed_similarities.argsort()[::-1]
         similarities_filtered = similarities_indices[~np.isin(similarities_indices, seen)][:k]
 
-        for idx in similarities_filtered:
-            print(f"Joke {idx} - score {summed_similarities[idx]}: {self.jokes.iloc[idx]['jokeText']}")
+        # for idx in similarities_filtered:
+            # print(f"Joke {idx} - score {summed_similarities[idx]}: {self.jokes.iloc[idx]['jokeText']}")
 
         return similarities_filtered
 
@@ -133,3 +132,21 @@ class SVDRecommender:
         
         with open(out_path, 'w') as file:
             json.dump(ratings_dict, file)
+    
+    def user_ratings(self, user_id):
+        if user_id >= self.U.shape[0]:
+            return None
+
+        ratings = self.R[user_id]
+        valid_mask = ~np.isnan(ratings)
+        valid_indices = np.where(valid_mask)[0]
+        valid_ratings = ratings[valid_mask]
+
+        rating_dict = dict(zip(valid_indices, valid_ratings))
+
+        return rating_dict
+    
+    def save_matrices(self, u_path, v_path, r_path):
+        np.savetxt(u_path, self.U, delimiter=",")
+        np.savetxt(v_path, self.V, delimiter=",")
+        np.savetxt(r_path, self.R, delimiter=",")
