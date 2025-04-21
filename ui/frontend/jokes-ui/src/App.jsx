@@ -49,6 +49,14 @@ function App() {
         set_loading(false);
     }
 
+    const handle_uid_create = async () => {
+        const response = await fetch("http://127.0.0.1:5000/new_profile")
+
+        const data = await response.json();
+        set_uid( data["uid"] );
+        set_profile( {} );
+    };
+
     useEffect(()=> {get_jokes();}, []);
     useEffect(()=> {get_recommendation();}, [jokes]);
     useEffect(()=> {get_recommendation();}, [profile]);
@@ -61,7 +69,7 @@ function App() {
                         <Nav.Link as={Link} to="/"> Department of Fun </Nav.Link>
                     </Nav>
                     <Nav>
-                        <Nav.Link as={Link} to="/profile"> Profile </Nav.Link>
+                        <Nav.Link as={Link} to="/profile"> Profile (UID = {uid == -1 ? "Unknown" : uid}) </Nav.Link>
                     </Nav>
                 </Container>
             </Navbar>
@@ -80,6 +88,7 @@ function App() {
                         uid={uid}
                         profile={profile}
                         set_profile={set_profile}
+                        handle_uid_create={handle_uid_create}
                     />
                     } />
                 <Route path="/profile" element={
@@ -88,6 +97,7 @@ function App() {
                         uid={uid}
                         set_uid={set_uid}
                         set_profile={set_profile}
+                        handle_uid_create={handle_uid_create}
                     />
                     } />
             </Routes>

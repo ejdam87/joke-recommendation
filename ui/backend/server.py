@@ -23,7 +23,8 @@ def get_profile() -> Response:
     data = request.get_json()
     uid = data["uid"]
     profile = recommender.user_ratings(uid)
-    profile = { int(k) : round(v, 2) for k, v in profile.items() }
+    if profile is not None:
+        profile = { int(k) : round(v, 2) for k, v in profile.items() }
     return jsonify( {"profile" : profile} )
 
 

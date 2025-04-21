@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Form, Button, Container, Card, Row, Col, Table } from "react-bootstrap";
+import { ToastContainer, toast } from 'react-toastify';
 
 function Profile(props) {
 
@@ -7,13 +8,6 @@ function Profile(props) {
 
     const handle_uid_change = (e) => {
         set_current_uid(e.target.value);
-    };
-
-    const handle_uid_create = async () => {
-        const response = await fetch("http://127.0.0.1:5000/new_profile")
-
-        const data = await response.json();
-        props.set_uid( data["uid"] );
     };
 
     const handle_uid_submit = async () => {
@@ -26,9 +20,17 @@ function Profile(props) {
             body: JSON.stringify({"uid": n_uid })
         })
 
-        props.set_uid(n_uid);
         const data = await response.json();
-        props.set_profile( data["profile"] );
+        const profile = data["profile"];
+        if (profile == null)
+        {
+            toast.error("Provided UID does not exist!");
+        }
+        else
+        {
+            props.set_uid(n_uid);
+            props.set_profile(profile);
+        }
     }
 
     const download_profile = () => {
@@ -56,13 +58,15 @@ function Profile(props) {
                 <Card.Body>
                     <Row>
                         <Col xs={12} sm={12} md={{ span: 3, offset: 2 }} lg={{ span: 3, offset: 2 }} className="d-flex flex-column align-items-center mb-5">
-                            <Form.Group controlId="formFile" className="mb-3">
-                                <Form.Label>Type your UID:</Form.Label>
-                                <Form.Control
-                                    className="mb-3"
-                                    type="number"
-                                    onChange={handle_uid_change}
-                                />
+                            <Form.Group as={Row} className="mb-3">
+                                <Form.Label column>Type your UID:</Form.Label>
+                                <Col>
+                                    <Form.Control
+                                        className="mb-3"
+                                        type="number"
+                                        onChange={handle_uid_change}
+                                    />
+                                </Col>
                                 <Button
                                     className="mb-3"
                                     onClick={handle_uid_submit}
@@ -70,7 +74,7 @@ function Profile(props) {
                                     Submit UID
                                 </Button>
                                 <p>Or</p>
-                                <Button onClick={handle_uid_create} >
+                                <Button onClick={props.handle_uid_create} >
                                     Create new UID
                                 </Button>
                             </Form.Group>
@@ -78,32 +82,38 @@ function Profile(props) {
                         </Col>
 
                         <Col xs={12} sm={12} md={{ span: 3, offset: 2 }} lg={{ span: 3, offset: 2 }} className="d-flex flex-column align-items-center">
-                            <Table size="md" responsive="md">
-                                <thead>
-                                    <tr>
-                                        <th>Joke ID</th>
-                                        <th>Rating</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {
-                                        Object.entries(props.profile).map(([id, rating]) => (
-                                            <tr key={id}>
-                                                <td>{id}</td>
-                                                <td>{rating}</td>
-                                            </tr>
-                                        ))
-                                    }
-                                </tbody>
-                            </Table>
+                            <div style={{ maxHeight: "25vh", overflowY: "auto" }}>
+                                <Table size="lg">
+                                    <thead>
+                                        <tr>
+                                            <th>Joke ID</th>
+                                            <th>Rating</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {
+                                            Object.entries(props.profile).map(([id, rating]) => (
+                                                <tr key={id}>
+                                                    <td>{id}</td>
+                                                    <td>{rating}</td>
+                                                </tr>
+                                            ))
+                                        }
+                                    </tbody>
+                                </Table>
+                            </div>
 
-                            <Button onClick={download_profile} >
+                            <Button
+                                onClick={download_profile}
+                                className="mt-3"
+                            >
                                 Download your current profile
                             </Button>
                         </Col>
                     </Row>
                 </Card.Body>
             </Card>
+            <ToastContainer position="bottom-left" autoClose={3000} />
         </Container>
     )
 }

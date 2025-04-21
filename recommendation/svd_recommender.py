@@ -15,11 +15,14 @@ class SVDRecommender:
 
         # jokes = pd.read_csv("data/jester_items.csv")
         # self.jokes = jokes[~jokes["jokeId"].isin([1,2,3,4,6,9,10,11,12,14])].reset_index(drop=True)
-    
+
     def seen_jokes(self, user_id):
+        if user_id == -1: # unknown user
+            return []
+
         seen = np.where(~np.isnan(self.R[user_id]))[0]
         return seen
-    
+
     def overall_top_k(self, user_id, k):
         jokes_sorted = np.nanmean(self.R, axis=0).argsort()[::-1]
         seen = self.seen_jokes(user_id)
@@ -31,9 +34,6 @@ class SVDRecommender:
         return jokes_filtered
 
     def recommend(self, user_id, k):
-        if user_id == -1:
-            return [1, 1, 1, 1, 1, 1]
-
         seen = self.seen_jokes(user_id)
 
         if len(seen) <= 5:

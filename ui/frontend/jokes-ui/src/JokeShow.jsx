@@ -16,6 +16,7 @@ function JokeShow(props) {
                         uid={props.uid}
                         profile={props.profile}
                         set_profile={props.set_profile}
+                        handle_uid_create={props.handle_uid_create}
                     />
                 </Col>
                 <Col xs={12} sm={12} md={4} lg={4}>

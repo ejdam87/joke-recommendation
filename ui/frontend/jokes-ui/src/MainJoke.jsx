@@ -5,6 +5,11 @@ function MainJoke(props) {
     const [rating, set_rating] = useState(0);
 
     const handle_rating_submit = async () => {
+        if (props.uid == -1)
+        {
+            await props.handle_uid_create();
+        }
+
         const n_rating = Number(rating)
         const jid = props.main_joke[0];
 
@@ -21,7 +26,7 @@ function MainJoke(props) {
 
     const joke_text = props.main_joke ? props.main_joke[1] : "";
     return (
-        <Container className="d-flex flex-column vh-100 justify-content-center align-items-center">
+        <Container className="mt-5">
             <Card border="0" className="mt-2">
                 <Card.Body>
                     <Card.Text className="fs-2">
