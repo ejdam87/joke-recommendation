@@ -1,14 +1,35 @@
-from flask import Flask, jsonify, Response, request
+import os
+
+from flask import Flask, jsonify, request, Response, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 
 from utils.paths import JOKE_CONTENT, U, V, R
 from recommendation.svd_recommender import SVDRecommender
 
-app = Flask(__name__)
-CORS(app) # necessary only for the development
+PRODUCTION = True
+
+if PRODUCTION:
+    app = Flask(__name__, static_folder="../frontend/jokes-ui/output")
+else:
+    app = Flask(__name__)
+
+if not PRODUCTION:
+    CORS(app) # necessary only for the development
+
 
 recommender = SVDRecommender(U, V, R, 5)
+
+
+@app.route("/", methods=["GET"])
+def get_index() -> Response:
+    print(app.static_folder)
+    return send_from_directory(app.static_folder, 'index.html')
+
+
+@app.route("/<path:path>")
+def get_static(path: str) -> Response:
+    return send_from_directory(app.static_folder, path)
 
 
 @app.route("/get_jokes", methods=["GET"])
