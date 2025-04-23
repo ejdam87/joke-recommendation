@@ -21,7 +21,7 @@ function MainJoke(props) {
             body: JSON.stringify({"uid": props.uid, "jid": jid, "rating": n_rating})
         })
 
-        props.set_profile({...props.profile, jid: n_rating});
+        props.set_profile({...props.profile, [jid]: n_rating});
     }
 
     const joke_text = props.main_joke ? props.main_joke[1] : "";

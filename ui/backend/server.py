@@ -18,7 +18,7 @@ if not PRODUCTION:
     CORS(app) # necessary only for the development
 
 
-recommender = SVDRecommender(U, V, R, 5)
+recommender = SVDRecommender(U, V, R, 1)
 
 
 @app.route("/", methods=["GET"])
