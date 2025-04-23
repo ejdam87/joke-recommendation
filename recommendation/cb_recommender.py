@@ -4,7 +4,7 @@ from collections import defaultdict
 import pandas as pd
 import numpy as np
 
-JOKE_LABELS = "/data/jokes_labels.csv"
+JOKE_LABELS = "/data/joke_labels.csv"
 JOKES_LABELED = "data/jokes_labeled.csv"
 RATING_MATRIX = "data/rating_matrix.csv"
 
