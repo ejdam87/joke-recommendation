@@ -1,3 +1,4 @@
 from recommendation.recommender import Recommender
 from recommendation.filler import Filler
 from recommendation.non_personalized import GlobalAverageFiller
+from recommendation.recommender_interface import AbstractRecommender

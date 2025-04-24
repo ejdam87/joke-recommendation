@@ -1,14 +1,14 @@
 import os
 import json
-from collections import defaultdict
+from collections import defaultdict, Counter
 import pandas as pd
 import numpy as np
+from .recommender_interface import AbstractRecommender
+JOKE_LABELS = "../data/joke_labels.csv"
+JOKES_LABELED = "../data/jokes_labeled.csv"
+RATING_MATRIX = "../data/rating_matrix.csv"
 
-JOKE_LABELS = "/data/joke_labels.csv"
-JOKES_LABELED = "data/jokes_labeled.csv"
-RATING_MATRIX = "data/rating_matrix.csv"
-
-class ContentBasedSystem:
+class ContentBasedRecommender(AbstractRecommender):
     def __init__(self):
         """
         Initializes the Content-Based Recommendation System.
@@ -16,6 +16,7 @@ class ContentBasedSystem:
         """
         self.jokes_labeled = pd.read_csv(JOKES_LABELED)
         self.joke_labels = pd.read_csv(JOKE_LABELS)
+        self.rating_matrix = pd.read_csv(RATING_MATRIX)
 
         # Ensure label_ids are lists (from string like "[1,2]" to list [1,2])
         self.jokes_labeled['label_ids'] = self.jokes_labeled['label_ids'].apply(
@@ -25,35 +26,79 @@ class ContentBasedSystem:
         # joke_id -> label_ids map
         self.joke_to_labels = self.jokes_labeled.set_index('joke_id')['label_ids'].to_dict()
 
-    def recommend(self, path_to_profile, top_k=6):
+    def recommend(self, uid, top_k=6):
         """
-        Recommends top_k jokes for the user based on their profile.
-
+        Recommend jokes to a user based on content similarity (shared labels).
+        
         Args:
-            path_to_profile (str): Path to JSON file with joke ratings (joke_id -> rating).
-            top_k (int): Number of recommendations to return.
+            uid (int): User ID (row index in rating_matrix).
+            top_k (int): Number of jokes to recommend.
 
         Returns:
-            List[int]: List of recommended joke_ids.
+            List of recommended joke IDs.
         """
-        with open(path_to_profile, 'r') as f:
-            user_ratings = {int(k): float(v) for k, v in json.load(f).items()}
+        # Get user ratings
+        user_ratings = self.rating_matrix.loc[uid]
+        rated_jokes = user_ratings[user_ratings.notna()].index.astype(int)
 
-        # Build label importance from rated jokes
-        label_scores = defaultdict(float)
-        for joke_id, rating in user_ratings.items():
-            labels = self.joke_to_labels.get(joke_id, [])
-            for label in labels:
+        if len(rated_jokes) > 0:
+            # TODO
+            return []
+
+        # Build user profile: label preferences weighted by rating
+        label_scores = Counter()
+        for joke_id in rated_jokes:
+            rating = user_ratings[str(joke_id)]
+            for label in self.joke_to_labels.get(joke_id, []):
                 label_scores[label] += rating
 
-        # Score all unrated jokes
-        scores = []
+        # Score all jokes based on overlap with user label preferences
+        joke_scores = {}
         for joke_id, labels in self.joke_to_labels.items():
-            if joke_id in user_ratings:
-                continue
-            score = sum(label_scores.get(label, 0.0) for label in labels)
-            scores.append((joke_id, score))
+            if str(joke_id) in rated_jokes:
+                continue  # Skip already rated jokes
+            score = sum(label_scores.get(label, 0) for label in labels)
+            if score != 0:
+                joke_scores[joke_id] = score
 
-        # Sort and return top K
-        scores.sort(key=lambda x: x[1], reverse=True)
-        return [joke_id for joke_id, _ in scores[:top_k]]
+        # Return top_k jokes sorted by score
+        top_jokes = sorted(joke_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
+        return [joke_id for joke_id, _ in top_jokes]
+    
+    def add_user(self):
+        """
+        Add a new user to the system by appending a row of NaNs (unrated) to the rating matrix.
+        
+        Returns:
+            int: The ID of the newly added user (row index).
+        """
+        new_user = pd.Series([np.nan] * self.rating_matrix.shape[1], index=self.rating_matrix.columns)
+        self.rating_matrix = pd.concat([self.rating_matrix, new_user.to_frame().T], ignore_index=True)
+        return self.rating_matrix.shape[0] - 1
+
+    def user_ratings(self, user_id):
+        """
+        Get all the user's ratings as a dictionary: {joke_id: rating}.
+        
+        Args:
+            user_id (int): ID of the user (row index in rating_matrix).
+        
+        Returns:
+            dict: Joke ID -> Rating for the user.
+        """
+        user_row = self.rating_matrix.loc[user_id]
+        return user_row.dropna().astype(float).to_dict()
+
+    def submit_rating(self, user_id, joke_id, rating):
+        """
+        Save a new rating into the matrix.
+        
+        Args:
+            user_id (int): The user ID.
+            joke_id (int): The joke ID (must match column name in rating_matrix).
+            rating (float): The rating to assign.
+        """
+        joke_id_str = str(joke_id)
+        if joke_id_str not in self.rating_matrix.columns:
+            raise ValueError(f"Joke ID {joke_id} not found in rating matrix columns.")
+        self.rating_matrix.at[user_id, joke_id_str] = rating
