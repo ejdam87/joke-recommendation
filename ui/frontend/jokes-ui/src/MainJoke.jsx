@@ -5,9 +5,10 @@ function MainJoke(props) {
     const [rating, set_rating] = useState(0);
 
     const handle_rating_submit = async () => {
-        if (props.uid == -1)
+        let uid = props.uid;
+        if (uid == -1)
         {
-            await props.handle_uid_create();
+            uid = await props.handle_uid_create();
         }
 
         const n_rating = Number(rating)
@@ -18,7 +19,7 @@ function MainJoke(props) {
             headers: {
                 "Content-Type": "application/json"
             },
-            body: JSON.stringify({"uid": props.uid, "jid": jid, "rating": n_rating})
+            body: JSON.stringify({"uid": uid, "jid": jid, "rating": n_rating})
         })
 
         props.set_profile({...props.profile, [jid]: n_rating});

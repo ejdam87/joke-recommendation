@@ -55,6 +55,7 @@ function App() {
         const data = await response.json();
         set_uid( data["uid"] );
         set_profile( {} );
+        return data["uid"];
     };
 
     useEffect(()=> {get_jokes();}, []);

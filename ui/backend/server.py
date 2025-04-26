@@ -1,13 +1,14 @@
-import os
-
 from flask import Flask, jsonify, request, Response, send_from_directory
 from flask_cors import CORS
 import pandas as pd
 
-from utils.paths import JOKE_CONTENT, U, V, R
+from utils.paths import JOKE_CONTENT, JOKE_LABELS, JOKES_LABELED, RATING_MATRIX, U, V, R
 from recommendation.svd_recommender import SVDRecommender
+from recommendation.cb_recommender import ContentBasedRecommender
 
-PRODUCTION = True
+
+PRODUCTION = False
+
 
 if PRODUCTION:
     app = Flask(__name__, static_folder="../frontend/jokes-ui/output")
@@ -18,12 +19,15 @@ if not PRODUCTION:
     CORS(app) # necessary only for the development
 
 
-recommender = SVDRecommender(U, V, R, 1)
+svd_recommender = SVDRecommender(U, V, R, 1)
+cb_recommender = ContentBasedRecommender(JOKE_LABELS, JOKES_LABELED, RATING_MATRIX)
+
+
+recommender = cb_recommender
 
 
 @app.route("/", methods=["GET"])
 def get_index() -> Response:
-    print(app.static_folder)
     return send_from_directory(app.static_folder, 'index.html')
 
 
@@ -60,6 +64,7 @@ def get_recommendation() -> Response:
     data = request.get_json()
     uid = data["uid"]
     result = [int(j) for j in recommender.recommend(uid, 6)]
+    print(result)
     return jsonify( {"recommendation" : result} )
 
 

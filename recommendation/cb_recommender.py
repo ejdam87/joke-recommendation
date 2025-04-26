@@ -4,9 +4,6 @@ import numpy as np
 from collections import Counter
 from .recommender_interface import AbstractRecommender
 
-JOKE_LABELS = "../data/joke_labels.csv"
-JOKES_LABELED = "../data/jokes_labeled.csv"
-RATING_MATRIX = "../data/rating_matrix.csv"
 
 class ContentBasedRecommender(AbstractRecommender):
     def __init__(self, joke_labels_path, jokes_labeled_path, rating_matrix_path):
@@ -42,7 +39,7 @@ class ContentBasedRecommender(AbstractRecommender):
             list[int]: List of recommended joke IDs.
         """
         if uid not in self.rating_matrix.index:
-            raise ValueError(f"User ID {uid} not found in rating matrix.")
+            return [1,2,3,4,5,6] # placeholder 
 
         user_ratings = self.rating_matrix.loc[uid]
         rated_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()

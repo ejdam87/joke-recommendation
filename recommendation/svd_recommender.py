@@ -1,7 +1,7 @@
 import numpy as np
-import pandas as pd
 import json
 from sklearn.metrics.pairwise import cosine_similarity
+
 
 class SVDRecommender:
     def __init__(self, u_path, v_path, ratings_path, retraining_patience):
@@ -30,7 +30,7 @@ class SVDRecommender:
 
         # for idx in jokes_filtered:
             # print(f"Joke {idx} - score {np.nanmean(self.R[:,idx])}: {self.jokes.iloc[idx]['jokeText']}")
-        
+
         return jokes_filtered
 
     def recommend(self, user_id, k):

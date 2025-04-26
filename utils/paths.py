@@ -1,4 +1,7 @@
 JOKE_CONTENT = "data/jester_items.csv"
+JOKE_LABELS = "data/joke_labels.csv"
+JOKES_LABELED = "data/jokes_labeled.csv"
+RATING_MATRIX = "data/rating_matrix.csv"
 U = "data/u.csv"
 V = "data/v.csv"
 R = "data/r.csv"
