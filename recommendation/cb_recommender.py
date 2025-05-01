@@ -38,14 +38,12 @@ class ContentBasedRecommender(AbstractRecommender):
         Returns:
             list[int]: List of recommended joke IDs.
         """
-        if uid not in self.rating_matrix.index:
-            return [1,2,3,4,5,6] # placeholder 
 
         user_ratings = self.rating_matrix.loc[uid]
         rated_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
 
-        if not rated_jokes:
-            return [1,2,3,4,5,6] # placeholder 
+        if uid not in self.rating_matrix.index or len(rated_jokes) < 3:
+            return self.best_jokes(top_k)
 
         label_scores = Counter()
         for joke_id in rated_jokes:
@@ -74,6 +72,19 @@ class ContentBasedRecommender(AbstractRecommender):
         new_user = pd.Series([np.nan] * self.rating_matrix.shape[1], index=self.rating_matrix.columns)
         self.rating_matrix = pd.concat([self.rating_matrix, new_user.to_frame().T], ignore_index=True)
         return self.rating_matrix.shape[0] - 1
+    
+    def best_jokes(self, top_k=6):
+        """
+        Get the top K jokes based on average ratings.
+
+        Args:
+            top_k (int): Number of top jokes to return.
+
+        Returns:
+            list[int]: List of top K joke IDs.
+        """
+        avg_ratings = self.rating_matrix.mean().sort_values(ascending=False)
+        return avg_ratings.head(top_k).index.astype(int).tolist()
 
     def user_ratings(self, user_id):
         """
@@ -105,3 +116,12 @@ class ContentBasedRecommender(AbstractRecommender):
         if user_id not in self.rating_matrix.index:
             raise ValueError(f"User ID {user_id} not found in rating matrix.")
         self.rating_matrix.at[user_id, joke_id_str] = rating
+
+    def safe_state(self):
+        """
+        Save the current state of the recommender system.
+
+        Returns:
+            dict: State of the recommender system.
+        """
+        pd.to_csv(self.rating_matrix, "rating_matrix_new.csv", index=True)
