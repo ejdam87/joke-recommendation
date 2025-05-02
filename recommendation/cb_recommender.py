@@ -40,10 +40,10 @@ class ContentBasedRecommender(AbstractRecommender):
         """
         
         if uid not in self.rating_matrix.index:
-            raise ValueError(f"User ID {uid} not found in rating matrix.")
-        
-        user_ratings = self.rating_matrix.loc[uid]
-        rated_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
+            rated_jokes = []
+        else:
+            user_ratings = self.rating_matrix.loc[uid]
+            rated_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
 
         if len(rated_jokes) < 3:
             return self.best_jokes(uid)
@@ -89,10 +89,10 @@ class ContentBasedRecommender(AbstractRecommender):
             list[int]: List of top K unseen joke IDs.
         """
         if user_id not in self.rating_matrix.index:
-            raise ValueError(f"User ID {user_id} not found in rating matrix.")
-
-        seen_jokes = set(self.rating_matrix.loc[user_id].dropna().index)
-        # print(f"Seen jokes for user {user_id}: {seen_jokes}")
+            seen_jokes = set()
+        else:
+            seen_jokes = set(self.rating_matrix.loc[user_id].dropna().index)
+            # print(f"Seen jokes for user {user_id}: {seen_jokes}")
 
         avg_ratings = self.rating_matrix.mean()
         unseen_ratings = avg_ratings[~avg_ratings.index.isin(seen_jokes)]

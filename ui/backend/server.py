@@ -7,7 +7,7 @@ from recommendation.svd_recommender import SVDRecommender
 from recommendation.cb_recommender import ContentBasedRecommender
 
 
-PRODUCTION = False
+PRODUCTION = True
 
 
 if PRODUCTION:
