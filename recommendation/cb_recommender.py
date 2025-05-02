@@ -38,12 +38,15 @@ class ContentBasedRecommender(AbstractRecommender):
         Returns:
             list[int]: List of recommended joke IDs.
         """
-
+        
+        if uid not in self.rating_matrix.index:
+            raise ValueError(f"User ID {uid} not found in rating matrix.")
+        
         user_ratings = self.rating_matrix.loc[uid]
         rated_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
 
-        if uid not in self.rating_matrix.index or len(rated_jokes) < 3:
-            return self.best_jokes(top_k)
+        if len(rated_jokes) < 3:
+            return self.best_jokes(uid)
 
         label_scores = Counter()
         for joke_id in rated_jokes:
@@ -54,7 +57,7 @@ class ContentBasedRecommender(AbstractRecommender):
         joke_scores = {}
         for joke_id, labels in self.joke_to_labels.items():
             if joke_id in rated_jokes:
-                continue  # Skip jokes already rated
+                continue
             score = sum(label_scores.get(label, 0) for label in labels)
             if score > 0:
                 joke_scores[joke_id] = score
@@ -72,19 +75,30 @@ class ContentBasedRecommender(AbstractRecommender):
         new_user = pd.Series([np.nan] * self.rating_matrix.shape[1], index=self.rating_matrix.columns)
         self.rating_matrix = pd.concat([self.rating_matrix, new_user.to_frame().T], ignore_index=True)
         return self.rating_matrix.shape[0] - 1
-    
-    def best_jokes(self, top_k=6):
+
+
+    def best_jokes(self, user_id, top_k=6):
         """
-        Get the top K jokes based on average ratings.
+        Get the top K jokes the user has not seen, based on average ratings.
 
         Args:
+            user_id (int): The user ID.
             top_k (int): Number of top jokes to return.
 
         Returns:
-            list[int]: List of top K joke IDs.
+            list[int]: List of top K unseen joke IDs.
         """
-        avg_ratings = self.rating_matrix.mean().sort_values(ascending=False)
-        return avg_ratings.head(top_k).index.astype(int).tolist()
+        if user_id not in self.rating_matrix.index:
+            raise ValueError(f"User ID {user_id} not found in rating matrix.")
+
+        seen_jokes = set(self.rating_matrix.loc[user_id].dropna().index)
+        # print(f"Seen jokes for user {user_id}: {seen_jokes}")
+
+        avg_ratings = self.rating_matrix.mean()
+        unseen_ratings = avg_ratings[~avg_ratings.index.isin(seen_jokes)]
+        top_jokes = unseen_ratings.sort_values(ascending=False).head(top_k)
+        return top_jokes.index.astype(int).tolist()
+
 
     def user_ratings(self, user_id):
         """
