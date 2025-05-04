@@ -1,0 +1,3 @@
+.carousel-control-prev, .carousel-control-next {
+    filter: invert(100%); 
+}

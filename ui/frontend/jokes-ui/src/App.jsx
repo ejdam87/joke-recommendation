@@ -2,11 +2,16 @@ import { useState, useEffect } from 'react';
 import { HashRouter as Router, Routes, Route, Link } from 'react-router-dom';
 import { Navbar, Nav, Spinner, Row, Col, Container } from "react-bootstrap";
 
+
+import EvalShow from './EvalShow';
 import JokeShow from './JokeShow';
 import Profile from './Profile';
 
 function App() {
-    const [visible_jokes, set_visible_jokes] = useState([]); // list to preserve order
+    const [visible_jokes_cb, set_visible_jokes_cb] = useState([]); // list to preserve order
+    const [visible_jokes_svd, set_visible_jokes_svd] = useState([]); // list to preserve order
+    const [visible_jokes_random, set_visible_jokes_random] = useState([]); // list to preserve order
+
     const [jokes, set_jokes] = useState({}); // object since we do not care about the order
     const [profile, set_profile] = useState({});
     const [uid, set_uid] = useState(-1);
@@ -26,27 +31,43 @@ function App() {
     }
 
     const get_recommendation = async () => {
-        set_loading(true);
-        const response = await fetch("http://127.0.0.1:5000/get_recommendation", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({"uid": uid})
-        })
-        if (!response.ok) {
-            set_loading(false);
-            return null;
-        }
-
-        const data = await response.json();
-        let to_show = [];
-        for (let id of data["recommendation"])
+        for (let recommender of ["cb", "svd", "random"])
         {
-            to_show.push( [id, jokes[id]] );
+            set_loading(true);
+            const response = await fetch(`http://127.0.0.1:5000/get_recommendation_${recommender}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({"uid": uid})
+            })
+            if (!response.ok) {
+                set_loading(false);
+                return null;
+            }
+    
+            const data = await response.json();
+            let to_show = [];
+            for (let id of data["recommendation"])
+            {
+                to_show.push( [id, jokes[id]] );
+            }
+
+            if (recommender == "cb")
+            {
+                set_visible_jokes_cb(to_show);
+            }
+            else if (recommender == "svd")
+            {
+                set_visible_jokes_svd(to_show);
+            }
+            else
+            {
+                set_visible_jokes_random(to_show);
+            }
+
+            set_loading(false);
         }
-        set_visible_jokes(to_show);
-        set_loading(false);
     }
 
     const handle_uid_create = async () => {
@@ -84,8 +105,10 @@ function App() {
                         </Row>
                     </Container>
                     :
-                    <JokeShow
-                        visible_jokes={visible_jokes}
+                    <EvalShow
+                        visible_jokes_cb={visible_jokes_cb}
+                        visible_jokes_svd={visible_jokes_svd}
+                        visible_jokes_random={visible_jokes_random}
                         uid={uid}
                         profile={profile}
                         set_profile={set_profile}

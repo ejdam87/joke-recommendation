@@ -5,6 +5,7 @@ import pandas as pd
 from utils.paths import JOKE_CONTENT, JOKE_LABELS, JOKES_LABELED, RATING_MATRIX, U, V, R
 from recommendation.svd_recommender import SVDRecommender
 from recommendation.cb_recommender import ContentBasedRecommender
+from recommendation.random_recommender import RandomRecommender
 
 
 PRODUCTION = True
@@ -21,9 +22,9 @@ if not PRODUCTION:
 
 svd_recommender = SVDRecommender(U, V, R, 1)
 cb_recommender = ContentBasedRecommender(JOKE_LABELS, JOKES_LABELED, RATING_MATRIX)
+random_recommender = RandomRecommender(RATING_MATRIX)
 
-
-recommender = cb_recommender
+recommenders = [svd_recommender, cb_recommender, random_recommender]
 
 
 @app.route("/", methods=["GET"])
@@ -47,7 +48,7 @@ def get_jokes() -> Response:
 def get_profile() -> Response:
     data = request.get_json()
     uid = data["uid"]
-    profile = recommender.user_ratings(uid)
+    profile = svd_recommender.user_ratings(uid) # should be same for all systems
     if profile is not None:
         profile = { int(k) : round(v, 2) for k, v in profile.items() }
     return jsonify( {"profile" : profile} )
@@ -55,18 +56,35 @@ def get_profile() -> Response:
 
 @app.route("/new_profile", methods=["GET"])
 def new_profile() -> Response:
-    uid = recommender.add_user()
+    uid = -1
+    for recommender in recommenders:
+        uid = recommender.add_user()
+
+    assert uid != -1
     return jsonify( {"uid" : uid} )
 
-
-@app.route("/get_recommendation", methods=["POST"])
-def get_recommendation() -> Response:
+# --- Recommendation
+@app.route("/get_recommendation_cb", methods=["POST"])
+def get_recommendation_cb() -> Response:
     data = request.get_json()
     uid = data["uid"]
-    result = [int(j) for j in recommender.recommend(uid, 6)]
-    print(result)
+    result = [int(j) for j in cb_recommender.recommend(uid, 6)]
     return jsonify( {"recommendation" : result} )
 
+@app.route("/get_recommendation_svd", methods=["POST"])
+def get_recommendation_svd() -> Response:
+    data = request.get_json()
+    uid = data["uid"]
+    result = [int(j) for j in svd_recommender.recommend(uid, 6)]
+    return jsonify( {"recommendation" : result} )
+
+@app.route("/get_recommendation_random", methods=["POST"])
+def get_recommendation_random() -> Response:
+    data = request.get_json()
+    uid = data["uid"]
+    result = [int(j) for j in random_recommender.recommend(uid, 6)]
+    return jsonify( {"recommendation" : result} )
+# ---
 
 @app.route("/submit_rating", methods=["POST"])
 def submit_rating() -> Response:
@@ -74,7 +92,10 @@ def submit_rating() -> Response:
     uid = data["uid"]
     jid = data["jid"]
     rating = data["rating"]
-    recommender.submit_rating(uid, jid, rating)
+
+    for recommender in recommenders:
+        recommender.submit_rating(uid, jid, rating)
+
     return jsonify({'message': 'POST request successful'}), 200
 
 
