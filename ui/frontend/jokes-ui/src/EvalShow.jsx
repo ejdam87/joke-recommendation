@@ -55,9 +55,9 @@ function EvalShow(props) {
 
         props.set_profile(
             {...props.profile,
-                [main_joke_cb[0]]: Number(rating_cb),
-                [main_joke_svd[0]]: Number(rating_svd),
-                [main_joke_random[0]]: Number(rating_random),}
+                [main_joke_cb[0] + " cb"]: Number(rating_cb),
+                [main_joke_svd[0] + " svd"]: Number(rating_svd),
+                [main_joke_random[0] + " random"]: Number(rating_random),}
         );
     }
 
