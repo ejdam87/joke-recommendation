@@ -20,7 +20,12 @@ class RandomRecommender(AbstractRecommender):
         self.rating_matrix.set_index('userId', inplace=True)
         self.rating_matrix.index = self.rating_matrix.index.astype(int)
         self.rating_matrix = self.rating_matrix.loc[:, self.rating_matrix.columns.str.isdigit()]
-        self.all_joke_ids = [int(col) for col in self.rating_matrix.columns if col.isdigit()]
+
+        joke_columns = [col for col in self.rating_matrix.columns if col.isdigit()]
+
+        # Filter out jokes that are entirely unrated (all NaN)
+        not_rated_jokes = self.rating_matrix[joke_columns].isna().all()
+        self.all_joke_ids = [int(col) for col in joke_columns if not not_rated_jokes[col]]
 
     def recommend(self, uid, top_k=6):
         """Generate random joke recommendations for a user.
@@ -37,18 +42,17 @@ class RandomRecommender(AbstractRecommender):
         - For existing users: Returns random selection from unrated jokes
         - If insufficient unrated jokes: Falls back to random selection from all jokes
         """
-        
-        if uid not in self.rating_matrix.index:
-            return random.sample(self.all_joke_ids, min(top_k, len(self.all_joke_ids)))
-        
+        result = []
+
         user_ratings = self.rating_matrix.loc[uid]
-        rated_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
-        unrated_jokes = [joke_id for joke_id in self.all_joke_ids if joke_id not in rated_jokes]
+        seen_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
         
-        if len(unrated_jokes) < top_k:
-            return random.sample(self.all_joke_ids, min(top_k, len(self.all_joke_ids)))
-        
-        return random.sample(unrated_jokes, top_k)
+        for i in range(top_k):
+            joke_id = random.choice(self.all_joke_ids)
+            if joke_id not in result and joke_id not in seen_jokes:
+                result.append(joke_id)
+        return result
+    
 
     def add_user(self):
         """

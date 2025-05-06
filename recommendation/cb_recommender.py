@@ -23,6 +23,10 @@ class ContentBasedRecommender(AbstractRecommender):
         self.jokes_labeled['label_ids'] = self.jokes_labeled['label_ids'].apply(
             lambda x: json.loads(x) if isinstance(x, str) else x
         )
+        self.not_rated_jokes = [
+            int(col) for col in self.rating_matrix.columns[self.rating_matrix.isna().all()]
+            if col.isdigit()
+        ]
 
         # Create joke_id -> label_ids mapping
         self.joke_to_labels = self.jokes_labeled.set_index('joke_id')['label_ids'].to_dict()
@@ -56,7 +60,7 @@ class ContentBasedRecommender(AbstractRecommender):
 
         joke_scores = {}
         for joke_id, labels in self.joke_to_labels.items():
-            if joke_id in rated_jokes:
+            if joke_id in rated_jokes or joke_id in self.not_rated_jokes:
                 continue
             score = sum(label_scores.get(label, 0) for label in labels)
             if score > 0:
