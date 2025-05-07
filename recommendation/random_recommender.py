@@ -21,11 +21,15 @@ class RandomRecommender(AbstractRecommender):
         self.rating_matrix.index = self.rating_matrix.index.astype(int)
         self.rating_matrix = self.rating_matrix.loc[:, self.rating_matrix.columns.str.isdigit()]
 
-        joke_columns = [col for col in self.rating_matrix.columns if col.isdigit()]
-
         # Filter out jokes that are entirely unrated (all NaN)
-        not_rated_jokes = self.rating_matrix[joke_columns].isna().all()
-        self.all_joke_ids = [int(col) for col in joke_columns if not not_rated_jokes[col]]
+        self.forbidden_jokes = [
+            int(col) for col in self.rating_matrix.columns[self.rating_matrix.isna().all()]
+            if col.isdigit()
+        ]
+
+        self.not_rated_jokes = [
+            int(col) for col in self.rating_matrix.columns if col.isdigit() and int(col) not in self.forbidden_jokes
+        ]
 
     def recommend(self, uid, top_k=6):
         """Generate random joke recommendations for a user.
@@ -44,15 +48,11 @@ class RandomRecommender(AbstractRecommender):
         """
         result = []
 
-        if uid == -1:
-            seen_jokes = []
-        else:
-            user_ratings = self.rating_matrix.loc[uid]
-            seen_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
-
+        if len(self.not_rated_jokes) < top_k:
+            return self.not_rated_jokes
         for i in range(top_k):
-            joke_id = random.choice(self.all_joke_ids)
-            if joke_id not in result and joke_id not in seen_jokes:
+            joke_id = random.choice(self.not_rated_jokes)
+            if joke_id not in result:
                 result.append(joke_id)
         return result
     
@@ -98,4 +98,10 @@ class RandomRecommender(AbstractRecommender):
             raise ValueError(f"Joke ID {joke_id} not found in rating matrix.")
         if user_id not in self.rating_matrix.index:
             raise ValueError(f"User ID {user_id} not found in rating matrix.")
+        
+        print("joke id:", joke_id_str)
+        print("before", self.not_rated_jokes)
+        if joke_id in self.not_rated_jokes:
+            self.not_rated_jokes.remove(joke_id)
+        print("after", self.not_rated_jokes)
         self.rating_matrix.at[user_id, joke_id_str] = rating

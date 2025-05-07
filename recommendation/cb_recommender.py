@@ -23,9 +23,13 @@ class ContentBasedRecommender(AbstractRecommender):
         self.jokes_labeled['label_ids'] = self.jokes_labeled['label_ids'].apply(
             lambda x: json.loads(x) if isinstance(x, str) else x
         )
-        self.not_rated_jokes = [
+        self.forbidden_jokes = [
             int(col) for col in self.rating_matrix.columns[self.rating_matrix.isna().all()]
             if col.isdigit()
+        ]
+
+        self.not_rated_jokes = [
+            int(col) for col in self.rating_matrix.columns if col.isdigit() and int(col) not in self.forbidden_jokes
         ]
 
         # Create joke_id -> label_ids mapping
@@ -49,25 +53,38 @@ class ContentBasedRecommender(AbstractRecommender):
             user_ratings = self.rating_matrix.loc[uid]
             rated_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
 
-        if len(rated_jokes) < 3:
-            return self.best_jokes(uid)
-
-        label_scores = Counter()
+        if len(rated_jokes) < 5:
+            return self.best_jokes(uid, top_k)
+        
+        if len(self.not_rated_jokes) < top_k:
+            return self.not_rated_jokes
+        
+        suitable_labels = {}
         for joke_id in rated_jokes:
-            rating = user_ratings[str(joke_id)]
+            joke_labels = self.joke_to_labels.get(joke_id, [])
+            for label in joke_labels:
+                if label not in suitable_labels:
+                    suitable_labels[label] = 0
+                suitable_labels[label] += self.rating_matrix.iloc[uid, joke_id]
+        suitable_labels = dict(sorted(suitable_labels.items(), key=lambda item: item[1], reverse=True))
+
+        jokes_score = {}
+        for joke_id in self.not_rated_jokes:
             for label in self.joke_to_labels.get(joke_id, []):
-                label_scores[label] += rating
+                if label in suitable_labels:
+                    jokes_score[joke_id] = jokes_score.get(joke_id, 0) + suitable_labels[label]
 
-        joke_scores = {}
-        for joke_id, labels in self.joke_to_labels.items():
-            if joke_id in rated_jokes or joke_id in self.not_rated_jokes:
-                continue
-            score = sum(label_scores.get(label, 0) for label in labels)
-            if score > 0:
-                joke_scores[joke_id] = score
+        res = sorted(
+            jokes_score,
+            key=lambda k: 0 if pd.isna(jokes_score[k]) else jokes_score[k],
+            reverse=True
+        )
+        print(jokes_score)
+        print(sorted(jokes_score, key=jokes_score.get, reverse=True))
+        print(res)
+        return res[:top_k]
 
-        top_jokes = sorted(joke_scores.items(), key=lambda x: x[1], reverse=True)[:top_k]
-        return [joke_id for joke_id, _ in top_jokes]
+                    
 
     def add_user(self):
         """
@@ -133,6 +150,12 @@ class ContentBasedRecommender(AbstractRecommender):
             raise ValueError(f"Joke ID {joke_id} not found in rating matrix.")
         if user_id not in self.rating_matrix.index:
             raise ValueError(f"User ID {user_id} not found in rating matrix.")
+        
+        print("joke id:", joke_id_str)
+        print("before", self.not_rated_jokes)
+        if joke_id in self.not_rated_jokes:
+            self.not_rated_jokes.remove(joke_id)
+        print("after", self.not_rated_jokes)
         self.rating_matrix.at[user_id, joke_id_str] = rating
 
     def safe_state(self):
