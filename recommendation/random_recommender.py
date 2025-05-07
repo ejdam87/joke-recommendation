@@ -44,9 +44,12 @@ class RandomRecommender(AbstractRecommender):
         """
         result = []
 
-        user_ratings = self.rating_matrix.loc[uid]
-        seen_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
-        
+        if uid == -1:
+            seen_jokes = []
+        else:
+            user_ratings = self.rating_matrix.loc[uid]
+            seen_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
+
         for i in range(top_k):
             joke_id = random.choice(self.all_joke_ids)
             if joke_id not in result and joke_id not in seen_jokes:
