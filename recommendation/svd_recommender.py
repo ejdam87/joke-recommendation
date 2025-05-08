@@ -37,7 +37,7 @@ class SVDRecommender:
     def recommend(self, user_id, k):
         seen = self.seen_jokes(user_id)
 
-        if len(seen) <= 5:
+        if len(seen) < 5:
             top = self.overall_top_k(user_id, k)
             return top
 
