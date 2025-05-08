@@ -40,6 +40,7 @@ def get_static(path: str) -> Response:
 @app.route("/get_jokes", methods=["GET"])
 def get_jokes() -> Response:
     df = pd.read_csv(JOKE_CONTENT)
+    df["jokeId"] = df["jokeId"] - 1
     data = dict(zip(df["jokeId"], df["jokeText"]))
     return jsonify( {"data" : data} )
 

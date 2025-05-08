@@ -15,24 +15,25 @@ class ContentBasedRecommender(AbstractRecommender):
         self.jokes_labeled = pd.read_csv(jokes_labeled_path)
         self.rating_matrix = pd.read_csv(rating_matrix_path)
 
-        self.rating_matrix.set_index('userId', inplace=True)
-        self.rating_matrix.index = self.rating_matrix.index.astype(int)
-        self.rating_matrix = self.rating_matrix.loc[:, self.rating_matrix.columns.str.isdigit()]
+        self.rating_matrix.drop(columns=['userId'], inplace=True)
+        self.rating_matrix.columns = [i for i in range(self.rating_matrix.shape[1])]
 
         # Parse label_ids from strings to actual lists
         self.jokes_labeled['label_ids'] = self.jokes_labeled['label_ids'].apply(
             lambda x: json.loads(x) if isinstance(x, str) else x
         )
+
+        # should be empty, only rated jokes used
         self.forbidden_jokes = [
-            int(col) for col in self.rating_matrix.columns[self.rating_matrix.isna().all()]
-            if col.isdigit()
+            col for col in self.rating_matrix.columns[self.rating_matrix.isna().all()]
         ]
 
         self.not_rated_jokes = [
-            int(col) for col in self.rating_matrix.columns if col.isdigit() and int(col) not in self.forbidden_jokes
+            col for col in self.rating_matrix.columns if col not in self.forbidden_jokes
         ]
 
         # Create joke_id -> label_ids mapping
+        self.jokes_labeled['joke_id'] = self.jokes_labeled['joke_id'] - 1 # start from 0
         self.joke_to_labels = self.jokes_labeled.set_index('joke_id')['label_ids'].to_dict()
 
     def recommend(self, uid, top_k=6):
@@ -47,10 +48,12 @@ class ContentBasedRecommender(AbstractRecommender):
             list[int]: List of recommended joke IDs.
         """
         
-        if uid not in self.rating_matrix.index:
+        if not 0 <= uid < self.rating_matrix.shape[0]:
             rated_jokes = []
         else:
-            user_ratings = self.rating_matrix.loc[uid]
+            user_ratings = self.rating_matrix.iloc[uid]
+            print("uid", uid)
+            print(user_ratings)
             rated_jokes = user_ratings[user_ratings.notna()].index.astype(int).tolist()
 
         if len(rated_jokes) < 5:
@@ -79,9 +82,7 @@ class ContentBasedRecommender(AbstractRecommender):
             key=lambda k: 0 if pd.isna(jokes_score[k]) else jokes_score[k],
             reverse=True
         )
-        print(jokes_score)
-        print(sorted(jokes_score, key=jokes_score.get, reverse=True))
-        print(res)
+        print(f"CB recommends {res[0]}")
         return res[:top_k]
 
                     
@@ -109,16 +110,20 @@ class ContentBasedRecommender(AbstractRecommender):
         Returns:
             list[int]: List of top K unseen joke IDs.
         """
-        if user_id not in self.rating_matrix.index:
+        if not 0 <= user_id < self.rating_matrix.shape[0]:
             seen_jokes = set()
         else:
-            seen_jokes = set(self.rating_matrix.loc[user_id].dropna().index)
+            seen_jokes = set(self.rating_matrix.iloc[user_id].dropna().index)
             # print(f"Seen jokes for user {user_id}: {seen_jokes}")
 
         avg_ratings = self.rating_matrix.mean()
+        print("AVG", avg_ratings)
         unseen_ratings = avg_ratings[~avg_ratings.index.isin(seen_jokes)]
         top_jokes = unseen_ratings.sort_values(ascending=False).head(top_k)
-        return top_jokes.index.astype(int).tolist()
+        print("TOP",top_jokes)
+        res = top_jokes.index.tolist()
+        print(f"CB recommends top overall {res[0]}")
+        return res
 
 
     def user_ratings(self, user_id):
@@ -131,9 +136,9 @@ class ContentBasedRecommender(AbstractRecommender):
         Returns:
             dict: {joke_id: rating}
         """
-        if user_id not in self.rating_matrix.index:
+        if not 0 <= user_id < self.rating_matrix.shape[0]:
             raise ValueError(f"User ID {user_id} not found in rating matrix.")
-        user_row = self.rating_matrix.loc[user_id]
+        user_row = self.rating_matrix.iloc[user_id]
         return user_row.dropna().astype(float).to_dict()
 
     def submit_rating(self, user_id, joke_id, rating):
@@ -145,18 +150,15 @@ class ContentBasedRecommender(AbstractRecommender):
             joke_id (int): Joke ID.
             rating (float): Rating value.
         """
-        joke_id_str = str(joke_id)
-        if joke_id_str not in self.rating_matrix.columns:
+        # joke_id_str = str(joke_id)
+        if not 0 <= joke_id < self.rating_matrix.shape[1]:
             raise ValueError(f"Joke ID {joke_id} not found in rating matrix.")
-        if user_id not in self.rating_matrix.index:
+        if not 0 <= user_id < self.rating_matrix.shape[0]:
             raise ValueError(f"User ID {user_id} not found in rating matrix.")
         
-        print("joke id:", joke_id_str)
-        print("before", self.not_rated_jokes)
         if joke_id in self.not_rated_jokes:
             self.not_rated_jokes.remove(joke_id)
-        print("after", self.not_rated_jokes)
-        self.rating_matrix.at[user_id, joke_id_str] = rating
+        self.rating_matrix.iloc[user_id, joke_id] = rating
 
     def safe_state(self):
         """

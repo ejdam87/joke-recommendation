@@ -17,19 +17,18 @@ class RandomRecommender(AbstractRecommender):
     def __init__(self, rating_matrix_path):
         self.rating_matrix = pd.read_csv(rating_matrix_path)
 
-        self.rating_matrix.set_index('userId', inplace=True)
-        self.rating_matrix.index = self.rating_matrix.index.astype(int)
-        self.rating_matrix = self.rating_matrix.loc[:, self.rating_matrix.columns.str.isdigit()]
+        self.rating_matrix.drop(columns=['userId'], inplace=True)
+        self.rating_matrix.columns = [i for i in range(self.rating_matrix.shape[1])]
 
-        # Filter out jokes that are entirely unrated (all NaN)
+        # should be empty, only rated jokes used
         self.forbidden_jokes = [
-            int(col) for col in self.rating_matrix.columns[self.rating_matrix.isna().all()]
-            if col.isdigit()
+            col for col in self.rating_matrix.columns[self.rating_matrix.isna().all()]
         ]
 
         self.not_rated_jokes = [
-            int(col) for col in self.rating_matrix.columns if col.isdigit() and int(col) not in self.forbidden_jokes
+            col for col in self.rating_matrix.columns if col not in self.forbidden_jokes
         ]
+
 
     def recommend(self, uid, top_k=6):
         """Generate random joke recommendations for a user.
@@ -46,15 +45,11 @@ class RandomRecommender(AbstractRecommender):
         - For existing users: Returns random selection from unrated jokes
         - If insufficient unrated jokes: Falls back to random selection from all jokes
         """
-        result = []
-
         if len(self.not_rated_jokes) < top_k:
             return self.not_rated_jokes
-        for i in range(top_k):
-            joke_id = random.choice(self.not_rated_jokes)
-            if joke_id not in result:
-                result.append(joke_id)
-        return result
+        sample = random.sample(self.not_rated_jokes, top_k)
+        print(f"Random recommends {sample[0]}")
+        return sample
     
 
     def add_user(self):
@@ -79,9 +74,9 @@ class RandomRecommender(AbstractRecommender):
         Returns:
             dict: {joke_id: rating}
         """
-        if user_id not in self.rating_matrix.index:
+        if not 0 <= user_id < self.rating_matrix.shape[0]:
             raise ValueError(f"User ID {user_id} not found in rating matrix.")
-        user_row = self.rating_matrix.loc[user_id]
+        user_row = self.rating_matrix.iloc[user_id]
         return user_row.dropna().astype(float).to_dict()
 
     def submit_rating(self, user_id, joke_id, rating):
@@ -93,15 +88,11 @@ class RandomRecommender(AbstractRecommender):
             joke_id (int): Joke ID.
             rating (float): Rating value.
         """
-        joke_id_str = str(joke_id)
-        if joke_id_str not in self.rating_matrix.columns:
+        if not 0 <= joke_id < self.rating_matrix.shape[1]:
             raise ValueError(f"Joke ID {joke_id} not found in rating matrix.")
-        if user_id not in self.rating_matrix.index:
+        if not 0 <= user_id < self.rating_matrix.shape[0]:
             raise ValueError(f"User ID {user_id} not found in rating matrix.")
         
-        print("joke id:", joke_id_str)
-        print("before", self.not_rated_jokes)
         if joke_id in self.not_rated_jokes:
             self.not_rated_jokes.remove(joke_id)
-        print("after", self.not_rated_jokes)
-        self.rating_matrix.at[user_id, joke_id_str] = rating
+        self.rating_matrix.iloc[user_id, joke_id] = rating

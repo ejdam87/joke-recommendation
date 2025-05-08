@@ -31,6 +31,7 @@ class SVDRecommender:
         # for idx in jokes_filtered:
             # print(f"Joke {idx} - score {np.nanmean(self.R[:,idx])}: {self.jokes.iloc[idx]['jokeText']}")
 
+        print(f"best overall joke: {jokes_filtered[0]}")
         return jokes_filtered
 
     def recommend(self, user_id, k):
@@ -46,6 +47,7 @@ class SVDRecommender:
         # for idx in top_k_filtered:
             # print(self.jokes.iloc[idx]["jokeText"])
 
+        print(f"SVD recommends: {top_k_filtered[0]}")
         return top_k_filtered
 
     def recommend_weighted_mean(self, user_id, k):
@@ -69,6 +71,9 @@ class SVDRecommender:
         return similarities_filtered
 
     def submit_rating(self, user_id, joke_id, rating):
+        if user_id == -1:
+            raise ValueError("Cannot submit rating for user without assigned id")
+
         self.R[user_id][joke_id] = rating
         self.trigger_training(user_id)
 
@@ -93,7 +98,7 @@ class SVDRecommender:
         num_factors = self.U.shape[1]
         lr = 0.005
         reg = 0.02
-        epochs = 50
+        epochs = 100
 
         u = np.random.normal(scale=0.01, size=num_factors)
 
@@ -102,18 +107,21 @@ class SVDRecommender:
 
         for epoch in range(epochs):
             total_loss = 0
-            print(f"Training epoch {epoch}")
+            # print(f"Training epoch {epoch}")
             for j_idx, r in zip(rated_indices, ratings):
                 v = self.V[j_idx]
                 pred = np.dot(u, v)
                 err = r - pred
                 u += lr * (err * v - reg * u)
                 total_loss += err**2 + reg * np.sum(u**2)
-            print(f"Loss: {total_loss / len(rated_indices)}")
+            # print(f"Loss: {total_loss / len(rated_indices)}")
 
         return u
     
     def import_profile(self, in_path, user_id = None):
+        if user_id is not None and (not 0 <= user_id < self.U.shape[0]):
+            raise ValueError("Invalid user id for import")
+
         with open(in_path, 'r') as file:
             profile = json.load(file)
 
@@ -126,8 +134,10 @@ class SVDRecommender:
         return user_id
     
     def export_profile(self, out_path, user_id):
+        if not 0 <= user_id < self.U.shape[0]:
+            raise ValueError("Invalid user id for export")
+
         rating_indices = np.where(~np.isnan(self.R[user_id]))[0]
-        print(rating_indices)
         ratings_dict = {}
 
         for idx in rating_indices:
@@ -137,7 +147,7 @@ class SVDRecommender:
             json.dump(ratings_dict, file)
     
     def user_ratings(self, user_id):
-        if user_id >= self.U.shape[0]:
+        if not 0 <= user_id < self.U.shape[0]:
             return None
 
         ratings = self.R[user_id]
