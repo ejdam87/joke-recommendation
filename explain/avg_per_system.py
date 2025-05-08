@@ -11,5 +11,5 @@ def get_avg(profile_path: str) -> dict[str, float]:
     
     return { sys : sum(v) / len(v) for sys, v in sys_to_rating.items() }
 
-for system, avg_r in get_avg("./data/profiles/profile_elza.json").items():
+for system, avg_r in get_avg("./data/profiles/profile_david.json").items():
     print(system, f": {avg_r:.3f}")
