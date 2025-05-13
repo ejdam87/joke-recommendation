@@ -32,33 +32,59 @@ def normalize(ratings: dict[str, NDArray]) -> dict[str, NDArray]:
     return {s: (vals - global_mean) / stds[i] for i, (s, vals) in enumerate(ratings.items()) }
 
 
-def prepare_sample(profile_paths: list[str]) -> dict[str, NDArray]:
+def prepare_sample(profile_paths: list[str], do_normalize: bool) -> dict[str, NDArray]:
     res = {"cb": [], "svd": [], "random": []}
     for profile in profile_paths:
         ratings = get_ratings(profile)
-        n_ratings = normalize(ratings)
-        n_ratings = ratings
+        n_ratings = normalize(ratings) if do_normalize else ratings
         for k, rats in n_ratings.items():
             res[k].append(rats)
     
     return { k: np.concatenate(v, axis=0) for k, v in res.items() }
 
-samples = prepare_sample( [f"./data/profiles/profile_{p}.json" for p in PROFILES] )
+n_samples = prepare_sample( [f"./data/profiles/profile_{p}.json" for p in PROFILES], True )
+samples = prepare_sample( [f"./data/profiles/profile_{p}.json" for p in PROFILES], False )
 
-"""
+
 from scipy.stats import shapiro
-stat, p = shapiro(samples["random"])
-print(p)
-"""
+
+for system in ["cb", "svd", "random"]:
+    stat, p = shapiro(n_samples[system])
+    print(p)
+
+import matplotlib.pyplot as plt
+# Data
+means = [np.mean(samples["cb"]), np.mean(samples["svd"]), np.mean(samples["random"])]
+stds = [np.std(samples["cb"]), np.std(samples["svd"]), np.std(samples["random"])]
+labels = ["CB", "SVD", "Random"]
+
+x_pos = range(len(means))
+
+# Create dot plot
+plt.figure(figsize=(6, 4))
+plt.errorbar(x_pos, means, yerr=stds, fmt='o', capsize=5, color='black', ecolor='#C4C4C4')
+
+plt.text(x_pos[0] + 0.1, means[0] + 0.2, f'{means[0]:.2f}±{stds[0]:.2f}', ha='center', va='bottom', fontsize=10, color='blue')
+plt.text(x_pos[1], means[1] + 0.2, f'{means[1]:.2f}±{stds[1]:.2f}', ha='center', va='bottom', fontsize=10, color='blue')
+plt.text(x_pos[2] - 0.1, means[2] + 0.2, f'{means[2]:.2f}±{stds[2]:.2f}', ha='center', va='bottom', fontsize=10, color='blue')
+
+
+plt.ylabel("Mean Rating")
+plt.xticks(x_pos, labels)
+plt.title("Mean rating per system")
+plt.grid(True, linestyle='--', alpha=0.5)
+
+plt.tight_layout()
+plt.show()
 
 from scipy.stats import friedmanchisquare, wilcoxon
 
-stat, p = friedmanchisquare(samples["cb"], samples["svd"], samples["random"])
+stat, p = friedmanchisquare(n_samples["cb"], n_samples["svd"], n_samples["random"])
 print(p)
 
-stat_12, p_12 = wilcoxon(samples["cb"], samples["svd"])
-stat_13, p_13 = wilcoxon(samples["cb"], samples["random"])
-stat_23, p_23 = wilcoxon(samples["svd"], samples["random"])
+stat_12, p_12 = wilcoxon(n_samples["cb"], n_samples["svd"])
+stat_13, p_13 = wilcoxon(n_samples["cb"], n_samples["random"])
+stat_23, p_23 = wilcoxon(n_samples["svd"], n_samples["random"])
 
 print(p_12)
 print(p_13)
