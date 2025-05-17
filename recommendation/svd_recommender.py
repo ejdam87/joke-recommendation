@@ -2,8 +2,10 @@ import numpy as np
 import json
 from sklearn.metrics.pairwise import cosine_similarity
 
+from .recommender_interface import AbstractRecommender
 
-class SVDRecommender:
+
+class SVDRecommender(AbstractRecommender):
     def __init__(self, u_path, v_path, ratings_path, retraining_patience):
         self.V = np.loadtxt(v_path, delimiter=',')
         self.U = np.loadtxt(u_path, delimiter=',')

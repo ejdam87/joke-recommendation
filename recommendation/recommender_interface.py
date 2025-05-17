@@ -4,7 +4,7 @@ class AbstractRecommender(ABC):
     @abstractmethod
     def recommend(self, user_id, k):
         pass
-    
+
     @abstractmethod
     def add_user(self):
         pass
