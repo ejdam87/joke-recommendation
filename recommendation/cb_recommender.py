@@ -1,7 +1,6 @@
 import json
 import pandas as pd
 import numpy as np
-from collections import Counter
 from .recommender_interface import AbstractRecommender
 
 
